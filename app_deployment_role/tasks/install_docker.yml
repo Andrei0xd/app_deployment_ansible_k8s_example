@@ -1,0 +1,25 @@
+- name: Install docker on ubuntu
+  ansible.builtin.apt:
+    name: "docker"
+    state: present
+  when: ansible_facts['os_family']|lower == 'ubuntu'
+
+- name: Start docker on 'ubuntu'
+  ansible.builtin.service:
+    name: docker
+    state: started
+  when: ansible_facts['os_family']|lower == 'ubuntu'
+
+- name: Install docker on windows
+  ansible.windows.win_package:
+    path: https://download.docker.com/win/stable/Docker%20Desktop%20Installer.exe
+    product_id: Docker Desktop
+    arguments: /quiet
+    state: present
+  when: ansible_facts['os_family']|lower == 'windows'
+
+- name: Start docker on 'windows'
+  ansible.windows.win_service:
+    name: com.docker.service
+    state: started
+  when: ansible_facts['os_family']|lower == 'windows'

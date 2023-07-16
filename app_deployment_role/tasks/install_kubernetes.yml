@@ -1,0 +1,11 @@
+- name: Install kubernetes on linux
+  ansible.builtin.apt:
+    name: "kubectl"
+    state: present
+  when: ansible_facts['os_family']|lower == 'ubuntu'
+
+- name: Install kubernetes on windows
+  ansible.windows.win_chocolatey:
+    name: kubernetes-cli
+    state: present
+  when: ansible_facts['os_family']|lower == 'windows'

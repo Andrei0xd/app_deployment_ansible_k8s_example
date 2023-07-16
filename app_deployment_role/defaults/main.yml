@@ -1,0 +1,5 @@
+APP_PATH_BASE_WIN: "C:\todo-app"
+APP_PATH_BASE_NIX: "/opt/todo-app"
+DOCKER_REPO: "thirteenn/todo-app"
+APP_VERSION: "1.0.0"
+APP_IMAGE: "{{ DOCKER_REPO }}:{{ APP_VERSION }}"

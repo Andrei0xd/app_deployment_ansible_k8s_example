@@ -1,0 +1,28 @@
+- name: Set the app path for windows hosts
+  set_fact:
+    APP_PATH: "{{ APP_PATH_BASE_WIN }}/"
+  when: (APP_PATH is not defined) and (ansible_facts['os_family']|lower == 'windows')
+
+- name: Set the app path for ubuntu hosts
+  set_fact:
+    APP_PATH: "{{ APP_PATH_BASE_NIX }}/"
+  when: (APP_PATH is not defined) and (ansible_facts['os_family']|lower == 'ubuntu')
+
+- name: Ensure docker exists and service is running
+  import_tasks: install_docker.yml
+
+- name: Get the latest version of the app on the host
+  import_tasks: get_latest_app.yml
+
+- name: Ensure Kubernetes is installed
+  import_tasks: install_kubernetes.yml
+# - name: Create Kubernetes manifest
+#   import_tasks: create_kubernetes_manifest.yml
+
+# - name: Run the deployment steps for an ubuntu host
+#   import_tasks: deploy_app_ubuntu.yml
+#   when: ansible_facts['os_family']|lower == 'ubuntu'
+
+# - name: Run the deployment steps for a windows host
+#   import_tasks: deploy_app_windows.yml
+#   when: ansible_facts['os_family']|lower == 'windows'
