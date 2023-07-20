@@ -1,0 +1,182 @@
+- name: Check if Minikube is running
+  command: minikube status
+  register: minikube_status
+  ignore_errors: true
+
+- name: Start Minikube
+  command: minikube start --force
+  become: yes
+  when: minikube_status.rc != 0
+
+- name: Create the namespace
+  k8s:
+    name: "{{ namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create MySQL PersistentVolumeClaim
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: mysql-pvc
+        namespace: "{{ namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
+- name: Create MySQL Secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: mysql-secret
+        namespace: "{{ namespace }}"
+      type: Opaque
+      stringData:
+        MYSQL_PASSWORD: "{{ mysql_password }}"
+
+- name: Create MySQL Deployment
+  k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: mysql
+        namespace: "{{ namespace }}"
+        labels:
+          app: "{{ mysql_deployment_name }}"
+          env: "{{ deployment_env }}"
+      spec:
+        replicas: "{{ replica_count }}"
+        selector:
+          matchLabels:
+            app: "{{ mysql_deployment_name }}"
+            env: "{{ deployment_env }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ mysql_deployment_name }}"
+              env: "{{ deployment_env }}"
+          spec:
+            containers:
+              - name: mysql
+                image: mysql:5.7
+                env:
+                  - name: MYSQL_USER
+                    value: "{{ mysql_user }}"
+                  - name: MYSQL_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: mysql-secret
+                        key: MYSQL_PASSWORD
+                  - name: MYSQL_DATABASE
+                    value: "{{ mysql_database_name }}"
+                ports:
+                  - containerPort: 3306
+                volumeMounts:
+                  - name: mysql-storage
+                    mountPath: /var/lib/mysql
+            volumes:
+              - name: mysql-storage
+                persistentVolumeClaim:
+                  claimName: mysql-pvc
+
+- name: Create todo app Deployment
+  k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: todo-app
+        namespace: "{{ namespace }}"
+        labels:
+          app: "{{ app_deployment_name }}"
+          env: "{{ deployment_env }}"
+      spec:
+        replicas: "{{ replica_count }}"
+        selector:
+          matchLabels:
+            app: "{{ app_deployment_name }}"
+            env: "{{ deployment_env }}"
+        template:
+          metadata:
+            labels:
+              app: "{{ app_deployment_name }}"
+              env: "{{ deployment_env }}"
+          spec:
+            containers:
+              - name: todo-app
+                image: "{{ APP_IMAGE }}"
+                ports:
+                  - containerPort: 3000
+                imagePullPolicy: IfNotPresent
+                env:
+                  - name: MYSQL_HOST
+                    value: mysql
+                  - name: MYSQL_USER
+                    value: "{{ mysql_user }}"
+                  - name: MYSQL_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: mysql-secret
+                        key: MYSQL_PASSWORD
+                  - name: MYSQL_DB
+                    value: "{{ mysql_database_name }}"
+
+- name: Create todo app Service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: todo-service
+        namespace: "{{ namespace }}"
+      spec:
+        selector:
+          app: todo-app
+        ports:
+          - protocol: TCP
+            port: 3000
+            targetPort: 3000
+
+- name: Check if Minikube nginx Ingress Addon is enabled
+  command: minikube addons list
+  register: addons_list
+  changed_when: false
+
+- name: Enable Minikube nginx Ingress Addon
+  command: minikube addons enable ingress
+  when: "'ingress: disabled' in addons_list.stdout"
+
+- name: Create Ingress
+  k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: todo-ingress
+        namespace: "{{ namespace }}"
+      spec:
+        rules:
+          - http:
+              paths:
+                - pathType: Prefix
+                  path: "/"
+                  backend:
+                    service:
+                      name: todo-service
+                      port:
+                        number: 3000

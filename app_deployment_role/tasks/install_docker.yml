@@ -1,14 +1,38 @@
-- name: Install docker on ubuntu
-  ansible.builtin.apt:
-    name: "docker"
+- name: Add Docker apt repository key.
+  apt_key:
+    url: "https://download.docker.com/linux/ubuntu/gpg"
     state: present
-  when: ansible_facts['os_family']|lower == 'ubuntu'
+  when: ansible_os_family  == 'Debian'
 
-- name: Start docker on 'ubuntu'
-  ansible.builtin.service:
+- name: Add Docker Repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+  when: ansible_os_family  == 'Debian'
+
+- name: Install docker on ubuntu/debian
+  apt:
+    name: "docker-ce"
+    state: present
+  when: ansible_os_family  == 'Debian'
+
+- name: Start docker on ubuntu
+  service:
     name: docker
     state: started
-  when: ansible_facts['os_family']|lower == 'ubuntu'
+  when: ansible_os_family  == 'Debian'
+
+- name: Install pip
+  apt:
+    name: "python3-pip"
+    state: present
+  when: ansible_os_family  == 'Debian'
+
+- name: Get docker package for python via pip
+  pip:
+    name: docker
+    state: present
+  when: ansible_os_family  == 'Debian'
 
 - name: Install docker on windows
   ansible.windows.win_package:
@@ -16,10 +40,10 @@
     product_id: Docker Desktop
     arguments: /quiet
     state: present
-  when: ansible_facts['os_family']|lower == 'windows'
+  when: ansible_os_family|lower == 'windows'
 
 - name: Start docker on 'windows'
   ansible.windows.win_service:
     name: com.docker.service
     state: started
-  when: ansible_facts['os_family']|lower == 'windows'
+  when: ansible_os_family|lower == 'windows'

@@ -1,13 +1,11 @@
 - name: Log into private registry if using a private registry
   docker_login:
-    registry: "{{ DOCKER_REPO }}"
+    registry: "registry.hub.docker.com/{{ DOCKER_REPO }}"
     username: "{{ DOCKERHUB_USERNAME }}"
     password: "{{ DOCKERHUB_TOKEN }}"
 
 - name: Pull the image from the registry
   community.docker.docker_image:
     name: "{{ DOCKER_REPO }}"
-    source: pull
-    repository: "{{ DOCKER_REPO }}"
     tag: "{{ APP_VERSION }}"
-    path: "{{ APP_PATH }}/app"
+    source: pull

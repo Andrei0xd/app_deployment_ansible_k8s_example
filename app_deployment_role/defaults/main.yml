@@ -1,5 +1,9 @@
 APP_PATH_BASE_WIN: "C:\todo-app"
 APP_PATH_BASE_NIX: "/opt/todo-app"
 DOCKER_REPO: "thirteenn/todo-app"
-APP_VERSION: "1.0.0"
+APP_VERSION: "latest"
 APP_IMAGE: "{{ DOCKER_REPO }}:{{ APP_VERSION }}"
+WITH_DOCKER: true
+mysql_user: "todo_user"
+mysql_database_name: "todo-db-1"
+mysql_password: "password"

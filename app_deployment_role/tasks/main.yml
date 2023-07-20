@@ -10,19 +10,18 @@
 
 - name: Ensure docker exists and service is running
   import_tasks: install_docker.yml
+  when: WITH_DOCKER
 
 - name: Get the latest version of the app on the host
   import_tasks: get_latest_app.yml
+  when: WITH_DOCKER
 
 - name: Ensure Kubernetes is installed
   import_tasks: install_kubernetes.yml
-# - name: Create Kubernetes manifest
-#   import_tasks: create_kubernetes_manifest.yml
 
-# - name: Run the deployment steps for an ubuntu host
-#   import_tasks: deploy_app_ubuntu.yml
-#   when: ansible_facts['os_family']|lower == 'ubuntu'
-
+- name: Run the deployment steps for an ubuntu host
+  import_tasks: deploy_one_node_cluster_ubuntu.yml
+  when: ansible_os_family == 'Debian'
 # - name: Run the deployment steps for a windows host
 #   import_tasks: deploy_app_windows.yml
 #   when: ansible_facts['os_family']|lower == 'windows'

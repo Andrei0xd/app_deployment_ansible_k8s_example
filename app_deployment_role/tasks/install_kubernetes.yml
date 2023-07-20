@@ -1,11 +1,37 @@
-- name: Install kubernetes on linux
-  ansible.builtin.apt:
-    name: "kubectl"
-    state: present
-  when: ansible_facts['os_family']|lower == 'ubuntu'
+- name: Check if kubectl exists on ubuntu
+  shell: kubectl version
+  register: kubectl_status
+  ignore_errors: true
 
-- name: Install kubernetes on windows
-  ansible.windows.win_chocolatey:
-    name: kubernetes-cli
+- name: Download kubectl latest binary on ubuntu
+  shell: 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
+  when: ansible_os_family  == 'Debian' and kubectl_status.rc != 0
+
+- name: Install kubectl on linux
+  shell: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  when: ansible_os_family  == 'Debian' and kubectl_status.rc != 0
+
+- name: Check if minikube exists on ubuntu
+  shell: minikube version
+  register: minikube_status
+  ignore_errors: true
+
+- name: Download minikube latest binary on ubuntu
+  shell: curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+  when: ansible_os_family  == 'Debian' and minikube_status.rc != 0
+
+- name: Install minikube on linux
+  shell: sudo install minikube-linux-amd64 /usr/local/bin/minikube
+  when: ansible_os_family  == 'Debian' and minikube_status.rc != 0
+
+- name: Install pip
+  apt:
+    name: "python3-pip"
     state: present
-  when: ansible_facts['os_family']|lower == 'windows'
+  when: ansible_os_family  == 'Debian'
+
+- name: Get kubernetes package for python via pip
+  pip:
+    name: kubernetes
+    state: present
+  when: ansible_os_family  == 'Debian'

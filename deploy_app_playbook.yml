@@ -1,0 +1,13 @@
+---
+- hosts: kubernetes_cluster
+  become: yes
+  roles:
+    - role: app_deployment_role
+      vars:
+        # app_deployment_name: { { app_deployment_name } }
+        # mysql_deployment_name: { { mysql_deployment_name } }
+        # deployment_env: { { deployment_env } }
+        # replica_count: { { replica_count } }
+        # mysql_password: { { mysql_password } }
+        # namespace: { { namespace } }
+        # app_version: { { app_version } }
