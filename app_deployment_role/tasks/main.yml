@@ -10,11 +10,10 @@
 
 - name: Ensure docker exists and service is running
   import_tasks: install_docker.yml
-  when: WITH_DOCKER
 
 - name: Get the latest version of the app on the host
   import_tasks: get_latest_app.yml
-  when: WITH_DOCKER
+  when: PULL_IMAGE_LOCAL
 
 - name: Ensure Kubernetes is installed
   import_tasks: install_kubernetes.yml

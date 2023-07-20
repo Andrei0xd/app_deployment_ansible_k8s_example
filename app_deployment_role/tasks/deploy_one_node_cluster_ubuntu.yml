@@ -15,6 +15,19 @@
     kind: Namespace
     state: present
 
+- name: Create Docker registry secret
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: my-registry-key
+        namespace: "{{ namespace }}"
+      type: kubernetes.io/dockerconfigjson
+      data:
+        .dockerconfigjson: "{{ docker_config | to_nice_json | b64encode }}"
+
 - name: Create MySQL PersistentVolumeClaim
   k8s:
     state: present
@@ -70,8 +83,13 @@
           spec:
             containers:
               - name: mysql
-                image: mysql:5.7
+                image: mysql:5.7.37
                 env:
+                  - name: MYSQL_ROOT_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: mysql-secret
+                        key: MYSQL_PASSWORD
                   - name: MYSQL_USER
                     value: "{{ mysql_user }}"
                   - name: MYSQL_PASSWORD
@@ -85,11 +103,28 @@
                   - containerPort: 3306
                 volumeMounts:
                   - name: mysql-storage
-                    mountPath: /var/lib/mysql
+                    mountPath: /var/lib/mysqlmnt
             volumes:
               - name: mysql-storage
                 persistentVolumeClaim:
                   claimName: mysql-pvc
+
+- name: Create mysql Service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: mysql-service
+        namespace: "{{ namespace }}"
+      spec:
+        selector:
+          app: "{{ mysql_deployment_name }}"
+        ports:
+          - protocol: TCP
+            port: 3306
+            targetPort: 3306
 
 - name: Create todo app Deployment
   k8s:
@@ -120,10 +155,12 @@
                 image: "{{ APP_IMAGE }}"
                 ports:
                   - containerPort: 3000
-                imagePullPolicy: IfNotPresent
+                imagePullPolicy: Always
+                imagePullSecrets:
+                  - name: my-registry-key
                 env:
                   - name: MYSQL_HOST
-                    value: mysql
+                    value: mysql-service
                   - name: MYSQL_USER
                     value: "{{ mysql_user }}"
                   - name: MYSQL_PASSWORD
@@ -180,3 +217,19 @@
                       name: todo-service
                       port:
                         number: 3000
+
+- name: Ensure ngrok exists
+  community.general.snap:
+    name: ngrok
+    state: present
+  when: EXPOSE_WITH_NGROK
+
+- name: Check if ngrok is running
+  command: pgrep ngrok
+  register: ngrok_status
+  ignore_errors: true
+  when: EXPOSE_WITH_NGROK
+
+- name: Expose the service
+  shell: "ngrok http http://$(sudo minikube ip) --log=stdout > $HOME/ngrok.log &"
+  when: ngrok_status.rc == 1 and EXPOSE_WITH_NGROK

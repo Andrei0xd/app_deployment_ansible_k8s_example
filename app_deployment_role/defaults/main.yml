@@ -3,7 +3,18 @@ APP_PATH_BASE_NIX: "/opt/todo-app"
 DOCKER_REPO: "thirteenn/todo-app"
 APP_VERSION: "latest"
 APP_IMAGE: "{{ DOCKER_REPO }}:{{ APP_VERSION }}"
-WITH_DOCKER: true
+PULL_IMAGE_LOCAL: false
 mysql_user: "todo_user"
 mysql_database_name: "todo-db-1"
-mysql_password: "password"
+EXPOSE_WITH_NGROK: true
+
+docker_config: >
+  {
+    "auths": {
+      "https://index.docker.io/v1/": {
+        "username": "{{ DOCKERHUB_USERNAME }}",
+        "password": "{{ DOCKERHUB_TOKEN }}",
+        "auth": "{{ (DOCKERHUB_USERNAME ~ ':' ~ DOCKERHUB_TOKEN) | b64encode }}"
+      }
+    }
+  }
