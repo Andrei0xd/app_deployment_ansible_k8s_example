@@ -1,0 +1,2 @@
+[kubernetes_cluster]
+host1 ansible_host=4.231.238.161 ansible_connection=ssh app_deployment_name=todo-app mysql_deployment_name=mysql deployment_env=dev namespace=my-namespace-1 replica_count=1 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
