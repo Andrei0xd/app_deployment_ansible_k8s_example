@@ -70,4 +70,4 @@ ___
 
 # 4. Accessing the app:
 
-The app is currently running at https://0f80-4-231-238-161.ngrok-free.app (and will hopefully still be by the time you access it)
+The app is currently running at https://hamster-right-briefly.ngrok-free.app/ (and will hopefully still be by the time you access it)
